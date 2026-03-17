@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SwiftCanvas — Build iOS Apps Visually</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161e;
+    --bg3: #1a1e28;
+    --bg4: #222736;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555b6e;
+    --accent: #5b8ef0;
+    --accent2: #3d6fd4;
+    --green: #3ecf8e;
+    --red: #e05555;
+    --amber: #f0a042;
+    --mono: 'DM Mono', monospace;
+    --display: 'Fraunces', serif;
+    --sans: 'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; overflow: hidden; }
+  button { cursor: pointer; border: none; background: none; font-family: var(--sans); color: var(--text); }
+  input, textarea, select { font-family: var(--sans); color: var(--text); background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 9px; font-size: 12px; width: 100%; outline: none; }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+
+  /* LAYOUT */
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* TOP BAR */
+  .topbar { height: 48px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 12px; flex-shrink: 0; z-index: 100; }
+  .logo { font-family: var(--display); font-weight: 600; font-size: 18px; color: var(--text); letter-spacing: -0.02em; margin-right: 8px; }
+  .logo span { color: var(--accent); }
+  .screen-tabs { display: flex; gap: 2px; flex: 1; }
+  .screen-tab { padding: 4px 12px; border-radius: 5px; font-size: 12px; font-weight: 500; color: var(--text2); transition: all 0.15s; border: 1px solid transparent; }
+  .screen-tab:hover { color: var(--text); background: var(--bg3); }
+  .screen-tab.active { color: var(--text); background: var(--bg3); border-color: var(--border2); }
+  .screen-tab.add { color: var(--text3); font-size: 16px; padding: 2px 10px; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .credits-badge { display: flex; align-items: center; gap: 5px; padding: 4px 10px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 20px; font-size: 11px; color: var(--text2); }
+  .credits-badge .dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+  .btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; transition: all 0.15s; border: 1px solid var(--border2); color: var(--text2); }
+  .btn:hover { background: var(--bg3); color: var(--text); }
+  .btn-code { font-family: var(--mono); font-size: 11px; }
+  .btn-export { background: var(--accent); border-color: var(--accent); color: white; padding: 6px 16px; }
+  .btn-export:hover { background: var(--accent2); border-color: var(--accent2); color: white; }
+
+  /* MAIN AREA */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* LEFT PANEL */
+  .left-panel { width: 196px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .panel-section { border-bottom: 1px solid var(--border); padding: 10px; }
+  .panel-section-title { font-size: 10px; font-weight: 500; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 7px; padding: 0 2px; }
+  .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .template-card { padding: 7px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); font-size: 11px; color: var(--text2); text-align: center; cursor: pointer; transition: all 0.15s; line-height: 1.3; }
+  .template-card:hover { border-color: var(--accent); color: var(--accent); background: rgba(91,142,240,0.07); }
+  .template-card.active { border-color: var(--accent); color: var(--accent); background: rgba(91,142,240,0.1); }
+  .template-icon { font-size: 16px; display: block; margin-bottom: 3px; }
+  .comp-list { display: flex; flex-direction: column; gap: 2px; }
+  .comp-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 6px; border: 1px solid transparent; background: transparent; font-size: 11px; color: var(--text2); cursor: grab; user-select: none; transition: all 0.15s; }
+  .comp-item:hover { background: var(--bg3); border-color: var(--border); color: var(--text); }
+  .comp-item:active { cursor: grabbing; opacity: 0.7; }
+  .comp-icon { width: 22px; height: 22px; border-radius: 4px; background: var(--bg4); display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+  .ai-section { padding: 10px; }
+  .ai-input-wrap { position: relative; }
+  .ai-input { width: 100%; padding: 7px 32px 7px 9px; font-size: 11px; border-radius: 6px; resize: none; height: 58px; line-height: 1.4; }
+  .ai-send-btn { position: absolute; bottom: 6px; right: 6px; width: 22px; height: 22px; background: var(--accent); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; transition: background 0.15s; }
+  .ai-send-btn:hover { background: var(--accent2); }
+  .ai-loading { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--accent); margin-top: 6px; }
+  .ai-dot { width: 4px; height: 4px; background: var(--accent); border-radius: 50%; animation: pulse 1s infinite; }
+  .ai-dot:nth-child(2) { animation-delay: 0.2s; }
+  .ai-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+  /* CANVAS */
+  .canvas-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg); position: relative; overflow: hidden; }
+  .canvas-bg { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px); background-size: 24px 24px; pointer-events: none; }
+  .phone-container { display: flex; flex-direction: column; align-items: center; gap: 10px; position: relative; z-index: 1; }
+  .phone-label { font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; font-family: var(--mono); }
+  .phone-outer { width: 260px; height: 530px; background: #1c1c1e; border-radius: 44px; padding: 8px; box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 30px 80px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.03); position: relative; }
+  .phone-side-btn { position: absolute; background: #2a2a2e; border-radius: 2px; }
+  .phone-vol1 { width: 3px; height: 30px; left: -3px; top: 80px; }
+  .phone-vol2 { width: 3px; height: 30px; left: -3px; top: 118px; }
+  .phone-power { width: 3px; height: 50px; right: -3px; top: 100px; }
+  .phone-inner { width: 100%; height: 100%; background: var(--phone-bg, #ffffff); border-radius: 38px; overflow: hidden; position: relative; }
+  .phone-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 90px; height: 26px; background: #1c1c1e; border-radius: 0 0 18px 18px; z-index: 20; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .notch-cam { width: 10px; height: 10px; border-radius: 50%; background: #2a2a2e; border: 1px solid #333; }
+  .notch-speaker { width: 36px; height: 4px; background: #2a2a2e; border-radius: 2px; }
+  .phone-status { position: absolute; top: 0; left: 0; right: 0; height: 44px; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 20px 6px; font-size: 10px; font-weight: 600; color: var(--phone-text, #000); z-index: 15; font-family: var(--mono); }
+  .phone-screen { position: absolute; top: 44px; left: 0; right: 0; bottom: 0; overflow-y: auto; overflow-x: hidden; }
+  .phone-screen::-webkit-scrollbar { display: none; }
+  .phone-drop-zone { min-height: 100%; padding: 8px; display: flex; flex-direction: column; gap: 6px; position: relative; }
+  .phone-drop-zone.drag-over { background: rgba(91,142,240,0.05); }
+  .drop-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; pointer-events: none; }
+  .drop-hint-icon { font-size: 32px; opacity: 0.15; margin-bottom: 8px; }
+  .drop-hint-text { font-size: 11px; color: var(--phone-text, #000); opacity: 0.2; font-family: var(--mono); }
+
+  /* PHONE ELEMENTS */
+  .phone-el { position: relative; border-radius: 6px; cursor: pointer; transition: outline 0.1s; outline: 2px solid transparent; }
+  .phone-el:hover { outline-color: rgba(91,142,240,0.4); }
+  .phone-el.selected { outline-color: var(--accent); }
+  .el-delete { position: absolute; top: -7px; right: -7px; width: 16px; height: 16px; background: var(--red); border-radius: 50%; color: white; font-size: 10px; display: none; align-items: center; justify-content: center; z-index: 10; line-height: 1; }
+  .phone-el.selected .el-delete { display: flex; }
+  .el-move { position: absolute; top: -7px; left: -7px; width: 16px; height: 16px; background: var(--bg4); border-radius: 50%; color: var(--text2); font-size: 9px; display: none; align-items: center; justify-content: center; z-index: 10; cursor: grab; }
+  .phone-el.selected .el-move { display: flex; }
+
+  /* PHONE UI COMPONENTS */
+  .el-navbar { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-bottom: 0.5px solid rgba(0,0,0,0.1); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-radius: 0; }
+  .el-navbar-title { font-size: 15px; font-weight: 600; color: #000; font-family: -apple-system, sans-serif; }
+  .el-navbar-action { font-size: 13px; color: #007AFF; font-family: -apple-system, sans-serif; }
+  .el-label { padding: 2px 4px; font-family: -apple-system, sans-serif; }
+  .el-subtext { padding: 1px 4px; font-family: -apple-system, sans-serif; opacity: 0.6; }
+  .el-button { margin: 0 4px; border-radius: 12px; padding: 11px 16px; text-align: center; font-size: 15px; font-weight: 600; font-family: -apple-system, sans-serif; }
+  .el-input { margin: 0 4px; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 10px; padding: 10px 12px; font-size: 14px; color: rgba(0,0,0,0.35); background: rgba(255,255,255,0.8); font-family: -apple-system, sans-serif; }
+  .el-card { margin: 0 4px; background: white; border-radius: 14px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); font-family: -apple-system, sans-serif; }
+  .el-card-title { font-size: 14px; font-weight: 600; color: #000; margin-bottom: 4px; }
+  .el-card-body { font-size: 12px; color: rgba(0,0,0,0.5); }
+  .el-image { margin: 0 4px; border-radius: 12px; background: linear-gradient(135deg,#e8eaf0,#d0d4e0); display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,0.25); font-size: 11px; font-family: -apple-system, sans-serif; }
+  .el-toggle { margin: 0 4px; display: flex; align-items: center; justify-content: space-between; padding: 6px 4px; font-family: -apple-system, sans-serif; }
+  .el-toggle-label { font-size: 14px; color: #000; }
+  .el-toggle-track { width: 44px; height: 26px; border-radius: 13px; position: relative; flex-shrink: 0; }
+  .el-toggle-thumb { position: absolute; top: 2px; width: 22px; height: 22px; background: white; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: left 0.2s; }
+  .el-divider { margin: 4px 4px; height: 0.5px; background: rgba(0,0,0,0.1); }
+  .el-listrow { margin: 0 4px; display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 0.5px solid rgba(0,0,0,0.08); font-family: -apple-system, sans-serif; }
+  .el-listrow-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .el-listrow-label { flex: 1; font-size: 14px; color: #000; }
+  .el-listrow-chevron { color: rgba(0,0,0,0.25); font-size: 12px; }
+  .el-tabbar { position: sticky; bottom: 0; background: rgba(255,255,255,0.92); backdrop-filter: blur(10px); border-top: 0.5px solid rgba(0,0,0,0.1); display: flex; padding: 6px 0 10px; font-family: -apple-system, sans-serif; margin-top: auto; }
+  .el-tabbar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .el-tabbar-icon { font-size: 20px; }
+  .el-tabbar-label { font-size: 9px; }
+  .el-spacer { height: 12px; }
+  .el-hero { margin: 0 4px; border-radius: 16px; overflow: hidden; position: relative; font-family: -apple-system, sans-serif; }
+  .el-hero-bg { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; padding: 14px; }
+  .el-hero-title { font-size: 18px; font-weight: 700; color: white; margin-bottom: 4px; }
+  .el-hero-sub { font-size: 12px; color: rgba(255,255,255,0.75); }
+
+  /* RIGHT PANEL */
+  .right-panel { width: 210px; background: var(--bg2); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+  .no-sel { padding: 30px 16px; text-align: center; color: var(--text3); font-size: 11px; line-height: 1.7; }
+  .no-sel-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.3; }
+  .prop-section { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .prop-title { font-size: 10px; font-weight: 500; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .prop-row { margin-bottom: 8px; }
+  .prop-label { font-size: 10px; color: var(--text3); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .prop-row input[type=text] { font-size: 11px; }
+  .prop-row input[type=range] { width: 100%; accent-color: var(--accent); }
+  .range-row { display: flex; align-items: center; gap: 6px; }
+  .range-val { font-size: 11px; color: var(--text2); font-family: var(--mono); min-width: 28px; text-align: right; }
+  .color-swatches { display: flex; flex-wrap: wrap; gap: 5px; }
+  .color-swatch { width: 20px; height: 20px; border-radius: 5px; cursor: pointer; border: 2px solid transparent; transition: border-color 0.1s; flex-shrink: 0; }
+  .color-swatch.sel { border-color: var(--text); }
+  .toggle-switch { display: flex; gap: 4px; }
+  .toggle-opt { flex: 1; padding: 4px; border-radius: 5px; border: 1px solid var(--border2); font-size: 11px; text-align: center; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+  .toggle-opt.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .layer-list { display: flex; flex-direction: column; gap: 2px; }
+  .layer-item { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 5px; font-size: 11px; color: var(--text2); cursor: pointer; border: 1px solid transparent; }
+  .layer-item:hover { background: var(--bg3); }
+  .layer-item.active { background: var(--bg3); border-color: var(--border2); color: var(--text); }
+  .layer-icon { font-size: 12px; width: 16px; text-align: center; }
+  .layer-name { flex: 1; }
+  .layer-del { font-size: 10px; color: var(--text3); opacity: 0; }
+  .layer-item:hover .layer-del { opacity: 1; }
+
+  /* CODE PANEL */
+  .code-drawer { background: #0a0c12; border-top: 1px solid var(--border); height: 0; overflow: hidden; transition: height 0.25s ease; flex-shrink: 0; }
+  .code-drawer.open { height: 160px; }
+  .code-inner { padding: 10px 16px; height: 100%; overflow-y: auto; }
+  .code-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .code-title { font-size: 10px; color: #4a6080; text-transform: uppercase; letter-spacing: 0.1em; font-family: var(--mono); }
+  .code-copy { font-size: 10px; color: #4a6080; padding: 2px 8px; border: 1px solid #1e2535; border-radius: 4px; font-family: var(--mono); }
+  .code-copy:hover { color: var(--accent); border-color: var(--accent); }
+  pre { font-family: var(--mono); font-size: 11px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+  .kw { color: #c792ea; }
+  .ty { color: #82aaff; }
+  .st { color: #c3e88d; }
+  .cm { color: #3d5068; }
+  .num { color: #f78c6c; }
+  .prop { color: #80cbc4; }
+
+  /* EXPORT MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.15s ease; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: 16px; width: 480px; max-width: 94vw; overflow: hidden; }
+  .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); }
+  .modal-title { font-family: var(--display); font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .modal-sub { font-size: 12px; color: var(--text2); }
+  .modal-body { padding: 20px 24px; }
+  .export-steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+  .export-step { display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: var(--bg3); border-radius: 10px; border: 1px solid var(--border); }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: white; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .step-text strong { color: var(--text); display: block; margin-bottom: 2px; font-size: 13px; }
+  .credit-display { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--bg3); border-radius: 10px; border: 1px solid var(--border); margin-bottom: 14px; }
+  .credit-info { font-size: 13px; color: var(--text2); }
+  .credit-count { font-size: 22px; font-weight: 600; color: var(--green); font-family: var(--mono); }
+  .credit-packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .credit-pack { padding: 12px 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .credit-pack:hover, .credit-pack.selected { border-color: var(--accent); background: rgba(91,142,240,0.08); }
+  .pack-credits { font-size: 18px; font-weight: 600; color: var(--text); font-family: var(--mono); }
+  .pack-label { font-size: 10px; color: var(--text3); margin: 1px 0; }
+  .pack-price { font-size: 13px; color: var(--accent); font-weight: 500; }
+  .modal-footer { padding: 14px 24px 20px; display: flex; gap: 8px; justify-content: flex-end; }
+  .btn-cancel { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border2); font-size: 13px; color: var(--text2); }
+  .btn-cancel:hover { background: var(--bg3); }
+  .btn-download { padding: 8px 20px; border-radius: 8px; background: var(--accent); color: white; font-size: 13px; font-weight: 500; }
+  .btn-download:hover { background: var(--accent2); }
+  .btn-buy { padding: 8px 20px; border-radius: 8px; background: var(--green); color: #0d1a0d; font-size: 13px; font-weight: 600; }
+  .btn-buy:hover { opacity: 0.9; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--bg4); border: 1px solid var(--border2); color: var(--text); padding: 8px 16px; border-radius: 20px; font-size: 12px; z-index: 9999; animation: slideUp 0.2s ease; white-space: nowrap; }
+  @keyframes slideUp { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+  /* ENV BANNER */
+  .env-banner { background: linear-gradient(90deg, rgba(91,142,240,0.15), rgba(62,207,142,0.1)); border-bottom: 1px solid rgba(91,142,240,0.2); padding: 6px 16px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text2); flex-shrink: 0; }
+  .env-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .env-key { font-family: var(--mono); color: var(--accent); font-size: 10px; background: rgba(91,142,240,0.1); padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(91,142,240,0.2); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  screens: [{ id: 1, name: 'Screen 1', elements: [] }],
+  activeScreen: 0,
+  selectedEl: null,
+  codeOpen: false,
+  showExport: false,
+  showEnvBanner: true,
+  credits: 3,
+  aiLoading: false,
+  aiPrompt: '',
+  toast: null,
+  dragType: null,
+  phoneTheme: 'light',
+  idCounter: 100,
+};
+
+// API key lives in localStorage — entered once via the settings panel
+function getApiKey() { return localStorage.getItem('sc_api_key') || ''; }
+function setApiKey(k) { localStorage.setItem('sc_api_key', k.trim()); }
+
+// ============================================================
+// COMPONENT DEFINITIONS
+// ============================================================
+const COMPONENTS = [
+  { type: 'navbar',   icon: '≡',  label: 'Nav Bar' },
+  { type: 'label',    icon: 'T',  label: 'Heading' },
+  { type: 'subtext',  icon: 't',  label: 'Subtext' },
+  { type: 'button',   icon: '◻',  label: 'Button' },
+  { type: 'input',    icon: '▭',  label: 'Text Input' },
+  { type: 'card',     icon: '▤',  label: 'Card' },
+  { type: 'image',    icon: '⬚',  label: 'Image' },
+  { type: 'hero',     icon: '◈',  label: 'Hero Banner' },
+  { type: 'listrow',  icon: '☰',  label: 'List Row' },
+  { type: 'toggle',   icon: '◑',  label: 'Toggle' },
+  { type: 'tabbar',   icon: '⊟',  label: 'Tab Bar' },
+  { type: 'divider',  icon: '—',  label: 'Divider' },
+  { type: 'spacer',   icon: '↕',  label: 'Spacer' },
+];
+
+const TEMPLATES = {
+  blank:     { icon: '○', label: 'Blank', elements: [] },
+  login:     { icon: '🔑', label: 'Login',
+    elements: [
+      { type:'navbar',  p:{ title:'Welcome Back', action:'' } },
+      { type:'image',   p:{ height:100, label:'App Logo', color:'#e8eaf0' } },
+      { type:'label',   p:{ text:'Sign in to continue', size:22, color:'#000000', align:'center' } },
+      { type:'spacer',  p:{} },
+      { type:'input',   p:{ placeholder:'Email address' } },
+      { type:'input',   p:{ placeholder:'Password' } },
+      { type:'button',  p:{ text:'Log In', color:'#007AFF', textColor:'#ffffff' } },
+      { type:'subtext', p:{ text:"Don't have an account? Sign up", color:'#007AFF', align:'center' } },
+    ]
+  },
+  dashboard: { icon: '◫', label: 'Dashboard',
+    elements: [
+      { type:'navbar',  p:{ title:'Dashboard', action:'Edit' } },
+      { type:'label',   p:{ text:'Good morning, Alex 👋', size:20, color:'#000000', align:'left' } },
+      { type:'subtext', p:{ text:'Here's what's happening today', color:'#666666', align:'left' } },
+      { type:'card',    p:{ title:'Steps Today', body:'2,400 steps · 78% of goal' } },
+      { type:'card',    p:{ title:'Tasks', body:'3 of 7 complete · 2 due today' } },
+      { type:'card',    p:{ title:'Streak', body:'🔥 12 days in a row!' } },
+      { type:'button',  p:{ text:'View All Activity', color:'#34C759', textColor:'#ffffff' } },
+      { type:'tabbar',  p:{ tabs:['Home','Search','Add','Alerts','Profile'], icons:['⊞','⊕','＋','🔔','👤'], active:0 } },
+    ]
+  },
+  profile:   { icon: '👤', label: 'Profile',
+    elements: [
+      { type:'navbar',  p:{ title:'Profile', action:'Edit' } },
+      { type:'image',   p:{ height:90, label:'Profile Photo', color:'#e1e5f0' } },
+      { type:'label',   p:{ text:'Alex Johnson', size:22, color:'#000000', align:'center' } },
+      { type:'subtext', p:{ text:'alex@example.com', color:'#888888', align:'center' } },
+      { type:'divider', p:{} },
+      { type:'listrow', p:{ icon:'⚙️', label:'Settings', color:'#8e8e93' } },
+      { type:'listrow', p:{ icon:'🔔', label:'Notifications', color:'#ff9500' } },
+      { type:'listrow', p:{ icon:'🛡️', label:'Privacy', color:'#34c759' } },
+      { type:'listrow', p:{ icon:'❓', label:'Help & Support', color:'#007aff' } },
+      { type:'button',  p:{ text:'Sign Out', color:'#FF3B30', textColor:'#ffffff' } },
+    ]
+  },
+  list:      { icon: '☰', label: 'List View',
+    elements: [
+      { type:'navbar',  p:{ title:'My List', action:'+ Add' } },
+      { type:'listrow', p:{ icon:'📌', label:'Item one — Important task', color:'#ff3b30' } },
+      { type:'listrow', p:{ icon:'📋', label:'Item two — Review document', color:'#007aff' } },
+      { type:'listrow', p:{ icon:'✅', label:'Item three — Completed', color:'#34c759' } },
+      { type:'listrow', p:{ icon:'📅', label:'Item four — Due tomorrow', color:'#ff9500' } },
+      { type:'divider', p:{} },
+      { type:'button',  p:{ text:'+ Add New Item', color:'#007AFF', textColor:'#ffffff' } },
+      { type:'tabbar',  p:{ tabs:['List','Calendar','Notes','More'], icons:['☰','📅','📝','•••'], active:0 } },
+    ]
+  },
+  settings:  { icon: '⚙', label: 'Settings',
+    elements: [
+      { type:'navbar',  p:{ title:'Settings', action:'' } },
+      { type:'label',   p:{ text:'Account', size:13, color:'#888888', align:'left' } },
+      { type:'listrow', p:{ icon:'👤', label:'Edit Profile', color:'#007aff' } },
+      { type:'listrow', p:{ icon:'🔒', label:'Change Password', color:'#ff9500' } },
+      { type:'label',   p:{ text:'Preferences', size:13, color:'#888888', align:'left' } },
+      { type:'toggle',  p:{ label:'Push Notifications', on:true, color:'#34C759' } },
+      { type:'toggle',  p:{ label:'Dark Mode', on:false, color:'#34C759' } },
+      { type:'toggle',  p:{ label:'Face ID Login', on:true, color:'#34C759' } },
+      { type:'divider', p:{} },
+      { type:'button',  p:{ text:'Delete Account', color:'#FF3B30', textColor:'#ffffff' } },
+    ]
+  },
+};
+
+const DEFAULT_PROPS = {
+  navbar:   { title:'My App', action:'Done' },
+  label:    { text:'Heading Text', size:20, color:'#000000', align:'left' },
+  subtext:  { text:'Secondary text here', size:14, color:'#666666', align:'left' },
+  button:   { text:'Get Started', color:'#007AFF', textColor:'#ffffff' },
+  input:    { placeholder:'Enter text...' },
+  card:     { title:'Card Title', body:'Card content goes here' },
+  image:    { height:100, label:'Image', color:'#e8eaf0' },
+  hero:     { height:140, title:'Hero Title', subtitle:'Subtitle text', fromColor:'#667eea', toColor:'#764ba2' },
+  listrow:  { icon:'📌', label:'List Item', color:'#007aff' },
+  toggle:   { label:'Enable Feature', on:true, color:'#34C759' },
+  tabbar:   { tabs:['Home','Search','Profile'], icons:['⊞','⊕','👤'], active:0 },
+  divider:  {},
+  spacer:   {},
+};
+
+// ============================================================
+// RENDER HELPERS
+// ============================================================
+function renderPhoneEl(el) {
+  const p = el.props;
+  switch(el.type) {
+    case 'navbar':
+      return `<div class="el-navbar"><span class="el-navbar-title">${p.title||'App'}</span><span class="el-navbar-action">${p.action||''}</span></div>`;
+    case 'label':
+      return `<div class="el-label" style="font-size:${p.size||20}px;color:${p.color||'#000'};text-align:${p.align||'left'};font-weight:600;">${p.text||'Label'}</div>`;
+    case 'subtext':
+      return `<div class="el-subtext" style="font-size:${p.size||14}px;color:${p.color||'#666'};text-align:${p.align||'left'};">${p.text||'Subtext'}</div>`;
+    case 'button':
+      return `<div class="el-button" style="background:${p.color||'#007AFF'};color:${p.textColor||'#fff'};">${p.text||'Button'}</div>`;
+    case 'input':
+      return `<div class="el-input">${p.placeholder||'Enter text...'}</div>`;
+    case 'card':
+      return `<div class="el-card"><div class="el-card-title">${p.title||'Title'}</div><div class="el-card-body">${p.body||'Content'}</div></div>`;
+    case 'image':
+      return `<div class="el-image" style="height:${p.height||100}px;background:${p.color||'#e8eaf0'};">${p.label||'Image'}</div>`;
+    case 'hero': {
+      return `<div class="el-hero" style="height:${p.height||140}px;background:linear-gradient(135deg,${p.fromColor||'#667eea'},${p.toColor||'#764ba2'})"><div class="el-hero-bg"><div class="el-hero-title">${p.title||'Hero'}</div><div class="el-hero-sub">${p.subtitle||'Subtitle'}</div></div></div>`;
+    }
+    case 'listrow':
+      return `<div class="el-listrow"><div class="el-listrow-icon" style="background:${p.color||'#007aff'}22;">${p.icon||'📌'}</div><div class="el-listrow-label">${p.label||'Item'}</div><div class="el-listrow-chevron">›</div></div>`;
+    case 'toggle': {
+      const on = p.on !== false;
+      return `<div class="el-toggle"><span class="el-toggle-label">${p.label||'Toggle'}</span><div class="el-toggle-track" style="background:${on?(p.color||'#34C759'):'rgba(0,0,0,0.15)'};"><div class="el-toggle-thumb" style="left:${on?'20px':'2px'};"></div></div></div>`;
+    }
+    case 'tabbar': {
+      const tabs = p.tabs||['Home','Search','Profile'];
+      const icons = p.icons||['⊞','⊕','👤'];
+      const active = p.active||0;
+      return `<div class="el-tabbar">${tabs.map((t,i)=>`<div class="el-tabbar-item" style="color:${i===active?'#007AFF':'rgba(0,0,0,0.35)'}"><div class="el-tabbar-icon">${icons[i]||'○'}</div><div class="el-tabbar-label">${t}</div></div>`).join('')}</div>`;
+    }
+    case 'divider':
+      return `<div class="el-divider"></div>`;
+    case 'spacer':
+      return `<div class="el-spacer"></div>`;
+    default:
+      return `<div style="padding:8px;font-size:12px;color:#999">${el.type}</div>`;
+  }
+};
+
+// ============================================================
+// SWIFT CODE GENERATOR
+// ============================================================
+function generateSwift(screen) {
+  const els = screen.elements;
+  if (!els.length) return `<span class="cm">// Drag components onto the canvas to see Swift code</span>`;
+
+  const indent = '        ';
+  const lines = [];
+  lines.push(`<span class="kw">import</span> <span class="ty">SwiftUI</span>\n`);
+  lines.push(`<span class="cm">// Generated by SwiftCanvas · swiftcanvas.app</span>`);
+  lines.push(`<span class="kw">struct</span> <span class="ty">${screen.name.replace(/\s/g,'')}</span>: <span class="ty">View</span> {`);
+
+  // State vars
+  const hasToggle = els.some(e=>e.type==='toggle');
+  const hasInput  = els.some(e=>e.type==='input');
+  if (hasToggle) lines.push(`  <span class="kw">@State private var</span> isOn = <span class="num">true</span>`);
+  if (hasInput)  lines.push(`  <span class="kw">@State private var</span> text = <span class="st">""</span>`);
+  lines.push('');
+  lines.push(`  <span class="kw">var</span> body: <span class="kw">some</span> <span class="ty">View</span> {`);
+  lines.push(`    <span class="ty">VStack</span>(spacing: <span class="num">0</span>) {`);
+
+  els.forEach(el => {
+    const p = el.props;
+    switch(el.type) {
+      case 'navbar':
+        lines.push(`${indent}<span class="ty">NavigationView</span> { }`);
+        lines.push(`${indent}  .navigationTitle(<span class="st">"${p.title||'App'}"</span>)`);
+        break;
+      case 'label':
+        lines.push(`${indent}<span class="ty">Text</span>(<span class="st">"${p.text||'Label'}"</span>)`);
+        lines.push(`${indent}  .font(.system(size: <span class="num">${p.size||20}</span>, weight: .semibold))`);
+        lines.push(`${indent}  .frame(maxWidth: .infinity, alignment: .${p.align||'leading'})`);
+        lines.push(`${indent}  .padding(.horizontal)`);
+        break;
+      case 'subtext':
+        lines.push(`${indent}<span class="ty">Text</span>(<span class="st">"${p.text||'Subtext'}"</span>)`);
+        lines.push(`${indent}  .font(.system(size: <span class="num">${p.size||14}</span>))`);
+        lines.push(`${indent}  .foregroundColor(.secondary)`);
+        lines.push(`${indent}  .frame(maxWidth: .infinity, alignment: .${p.align||'leading'})`);
+        lines.push(`${indent}  .padding(.horizontal)`);
+        break;
+      case 'button':
+        lines.push(`${indent}<span class="ty">Button</span>(action: { }) {`);
+        lines.push(`${indent}  <span class="ty">Text</span>(<span class="st">"${p.text||'Button'}"</span>)`);
+        lines.push(`${indent}    .frame(maxWidth: .infinity)`);
+        lines.push(`${indent}    .padding()`);
+        lines.push(`${indent}    .background(<span class="ty">Color</span>(hex: <span class="st">"${p.color||'#007AFF'}"</span>))`);
+        lines.push(`${indent}    .foregroundColor(.white)`);
+        lines.push(`${indent}    .cornerRadius(<span class="num">12</span>)`);
+        lines.push(`${indent}}`);
+        lines.push(`${indent}.padding(.horizontal)`);
+        break;
+      case 'input':
+        lines.push(`${indent}<span class="ty">TextField</span>(<span class="st">"${p.placeholder||'Enter text'}"</span>, text: $text)`);
+        lines.push(`${indent}  .textFieldStyle(.roundedBorder)`);
+        lines.push(`${indent}  .padding(.horizontal)`);
+        break;
+      case 'card':
+        lines.push(`${indent}<span class="ty">VStack</span>(alignment: .leading, spacing: <span class="num">4</span>) {`);
+        lines.push(`${indent}  <span class="ty">Text</span>(<span class="st">"${p.title||'Title'}"</span>).font(.headline)`);
+        lines.push(`${indent}  <span class="ty">Text</span>(<span class="st">"${p.body||'Body'}"</span>).font(.subheadline).foregroundColor(.secondary)`);
+        lines.push(`${indent}}`);
+        lines.push(`${indent}.padding()`);
+        lines.push(`${indent}.frame(maxWidth: .infinity, alignment: .leading)`);
+        lines.push(`${indent}.background(<span class="ty">Color</span>(.systemBackground))`);
+        lines.push(`${indent}.cornerRadius(<span class="num">14</span>)`);
+        lines.push(`${indent}.shadow(radius: <span class="num">2</span>)`);
+        lines.push(`${indent}.padding(.horizontal)`);
+        break;
+      case 'image':
+        lines.push(`${indent}<span class="ty">Image</span>(systemName: <span class="st">"photo"</span>)`);
+        lines.push(`${indent}  .resizable().scaledToFill()`);
+        lines.push(`${indent}  .frame(height: <span class="num">${p.height||100}</span>)`);
+        lines.push(`${indent}  .clipped()`);
+        break;
+      case 'hero':
+        lines.push(`${indent}<span class="ty">ZStack</span>(alignment: .bottomLeading) {`);
+        lines.push(`${indent}  <span class="ty">LinearGradient</span>(colors: [<span class="ty">Color</span>(hex:<span class="st">"${p.fromColor}"</span>), <span class="ty">Color</span>(hex:<span class="st">"${p.toColor}"</span>)],`);
+        lines.push(`${indent}    startPoint: .topLeading, endPoint: .bottomTrailing)`);
+        lines.push(`${indent}  <span class="ty">VStack</span>(alignment: .leading) {`);
+        lines.push(`${indent}    <span class="ty">Text</span>(<span class="st">"${p.title}"</span>).font(.title.bold()).foregroundColor(.white)`);
+        lines.push(`${indent}    <span class="ty">Text</span>(<span class="st">"${p.subtitle}"</span>).font(.subheadline).foregroundColor(.white.opacity(<span class="num">0.8</span>))`);
+        lines.push(`${indent}  }.padding()`);
+        lines.push(`${indent}}`);
+        lines.push(`${indent}.frame(height: <span class="num">${p.height||140}</span>)`);
+        break;
+      case 'listrow':
+        lines.push(`${indent}<span class="ty">HStack</span> {`);
+        lines.push(`${indent}  <span class="ty">Text</span>(<span class="st">"${p.icon||'📌'}"</span>)`);
+        lines.push(`${indent}  <span class="ty">Text</span>(<span class="st">"${p.label||'Item'}"</span>)`);
+        lines.push(`${indent}  <span class="ty">Spacer</span>()`);
+        lines.push(`${indent}  <span class="ty">Image</span>(systemName: <span class="st">"chevron.right"</span>).foregroundColor(.secondary)`);
+        lines.push(`${indent}}.padding()`);
+        break;
+      case 'toggle':
+        lines.push(`${indent}<span class="ty">Toggle</span>(<span class="st">"${p.label||'Feature'}"</span>, isOn: $isOn)`);
+        lines.push(`${indent}  .tint(<span class="ty">Color</span>(hex: <span class="st">"${p.color||'#34C759'}"</span>))`);
+        lines.push(`${indent}  .padding(.horizontal)`);
+        break;
+      case 'tabbar':
+        lines.push(`${indent}<span class="cm">// Tab bar implemented via TabView at root level</span>`);
+        break;
+      case 'divider':
+        lines.push(`${indent}<span class="ty">Divider</span>()`);
+        break;
+      case 'spacer':
+        lines.push(`${indent}<span class="ty">Spacer</span>().frame(height: <span class="num">12</span>)`);
+        break;
+    }
+    lines.push('');
+  });
+
+  lines.push(`    }`);
+  lines.push(`    .edgesIgnoringSafeArea(.top)`);
+  lines.push(`  }`);
+  lines.push(`}`);
+  lines.push('');
+  lines.push(`<span class="cm">// Color extension for hex support</span>`);
+  lines.push(`<span class="kw">extension</span> <span class="ty">Color</span> {`);
+  lines.push(`  <span class="kw">init</span>(hex: <span class="ty">String</span>) { <span class="cm">/* hex init */</span> }`);
+  lines.push(`}`);
+  return lines.join('\n');
+}
+
+// ============================================================
+// EXPORT ZIP GENERATOR
+// ============================================================
+async function generateXcodeExport() {
+  const screen = state.screens[state.activeScreen];
+  const appName = 'MySwiftApp';
+  const swiftCode = generateSwiftRaw(screen);
+
+  const contentViewSwift = `//
+//  ContentView.swift
+//  ${appName}
+//  Generated by SwiftCanvas — swiftcanvas.app
+//
+
+import SwiftUI
+
+${swiftCode}
+
+#Preview {
+    ${screen.name.replace(/\s/g,'')}()
+}
+`;
+
+  const appSwift = `//
+//  ${appName}App.swift
+//  ${appName}
+//
+
+import SwiftUI
+
+@main
+struct ${appName}App: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+`;
+
+  const infoPlist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>${appName}</string>
+  <key>CFBundleIdentifier</key><string>com.swiftcanvas.${appName.toLowerCase()}</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>UILaunchScreen</key><dict/>
+</dict>
+</plist>`;
+
+  const readme = `# ${appName}
+Generated with SwiftCanvas — https://swiftcanvas.app
+
+## How to open
+1. Open ${appName}.xcodeproj in Xcode
+2. Select your simulator or device
+3. Press Run (Cmd+R)
+
+## Requirements
+- Xcode 15+
+- iOS 17+ deployment target
+- macOS 14+ (Sonoma) for building
+`;
+
+  // Build a zip using JSZip if available, else fallback to text blob
+  const files = {
+    [`${appName}/${appName}App.swift`]: appSwift,
+    [`${appName}/ContentView.swift`]: contentViewSwift,
+    [`${appName}/Info.plist`]: infoPlist,
+    [`README.md`]: readme,
+  };
+
+  if (window.JSZip) {
+    const zip = new window.JSZip();
+    Object.entries(files).forEach(([path, content]) => zip.file(path, content));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${appName}.zip`; a.click();
+    URL.revokeObjectURL(url);
+  } else {
+    // Fallback: download ContentView.swift directly
+    const blob = new Blob([contentViewSwift], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'ContentView.swift'; a.click();
+    URL.revokeObjectURL(url);
+  }
+}
+
+function generateSwiftRaw(screen) {
+  const els = screen.elements;
+  const lines = [];
+  const hasToggle = els.some(e=>e.type==='toggle');
+  const hasInput  = els.some(e=>e.type==='input');
+  lines.push(`struct ${screen.name.replace(/\s/g,'')}: View {`);
+  if (hasToggle) lines.push(`  @State private var isOn = true`);
+  if (hasInput)  lines.push(`  @State private var text = ""`);
+  lines.push('');
+  lines.push(`  var body: some View {`);
+  lines.push(`    VStack(spacing: 0) {`);
+  els.forEach(el => {
+    const p = el.props;
+    const i = '      ';
+    switch(el.type) {
+      case 'navbar':  lines.push(`${i}Text("${p.title||'App'}").font(.headline).padding()`); break;
+      case 'label':   lines.push(`${i}Text("${p.text||'Label'}").font(.system(size:${p.size||20},weight:.semibold)).frame(maxWidth:.infinity,alignment:.${p.align||'leading'}).padding(.horizontal)`); break;
+      case 'subtext': lines.push(`${i}Text("${p.text||'Subtext'}").font(.system(size:${p.size||14})).foregroundColor(.secondary).frame(maxWidth:.infinity,alignment:.${p.align||'leading'}).padding(.horizontal)`); break;
+      case 'button':  lines.push(`${i}Button("${p.text||'Button'}") { }.frame(maxWidth:.infinity).padding().background(Color(hex:"${p.color||'#007AFF'}")).foregroundColor(.white).cornerRadius(12).padding(.horizontal)`); break;
+      case 'input':   lines.push(`${i}TextField("${p.placeholder||'Enter text'}", text: $text).textFieldStyle(.roundedBorder).padding(.horizontal)`); break;
+      case 'card':    lines.push(`${i}VStack(alignment:.leading,spacing:4) { Text("${p.title||'Title'}").font(.headline); Text("${p.body||'Body'}").foregroundColor(.secondary) }.padding().frame(maxWidth:.infinity,alignment:.leading).background(Color(.systemBackground)).cornerRadius(14).shadow(radius:2).padding(.horizontal)`); break;
+      case 'image':   lines.push(`${i}Image(systemName:"photo").resizable().scaledToFill().frame(height:${p.height||100}).clipped()`); break;
+      case 'listrow': lines.push(`${i}HStack { Text("${p.icon||'📌'}"); Text("${p.label||'Item'}"); Spacer(); Image(systemName:"chevron.right").foregroundColor(.secondary) }.padding()`); break;
+      case 'toggle':  lines.push(`${i}Toggle("${p.label||'Feature'}", isOn: $isOn).tint(Color(hex:"${p.color||'#34C759'}")).padding(.horizontal)`); break;
+      case 'divider': lines.push(`${i}Divider()`); break;
+      case 'spacer':  lines.push(`${i}Spacer().frame(height:12)`); break;
+      case 'hero':    lines.push(`${i}ZStack(alignment:.bottomLeading) { LinearGradient(colors:[Color(hex:"${p.fromColor}"),Color(hex:"${p.toColor}")],startPoint:.topLeading,endPoint:.bottomTrailing); VStack(alignment:.leading) { Text("${p.title}").font(.title.bold()).foregroundColor(.white); Text("${p.subtitle}").foregroundColor(.white.opacity(0.8)) }.padding() }.frame(height:${p.height||140})`); break;
+    }
+  });
+  lines.push(`    }`);
+  lines.push(`    .edgesIgnoringSafeArea(.top)`);
+  lines.push(`  }`);
+  lines.push(`}`);
+  lines.push('');
+  lines.push(`extension Color {`);
+  lines.push(`  init(hex: String) {`);
+  lines.push(`    let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)`);
+  lines.push(`    var int: UInt64 = 0`);
+  lines.push(`    Scanner(string: hex).scanHexInt64(&int)`);
+  lines.push(`    let r,g,b: UInt64`);
+  lines.push(`    (r,g,b) = ((int >> 16)&0xFF,(int >> 8)&0xFF,int&0xFF)`);
+  lines.push(`    self.init(.sRGB,red:Double(r)/255,green:Double(g)/255,blue:Double(b)/255)`);
+  lines.push(`  }`);
+  lines.push(`}`);
+  return lines.join('\n');
+}
+
+// ============================================================
+// AI CALL
+// ============================================================
+async function callAI(prompt) {
+  const screen = state.screens[state.activeScreen];
+  const canvasJson = JSON.stringify(screen.elements.map(e=>({type:e.type,props:e.props})));
+  const systemPrompt = `You are SwiftCanvas AI, an iOS app design assistant. You receive a user's instruction and the current canvas state as JSON. You must respond ONLY with a valid JSON array of elements to REPLACE the canvas with. No explanation, no markdown, just the JSON array.
+
+Each element has: { "type": string, "props": object }
+Available types: navbar, label, subtext, button, input, card, image, hero, listrow, toggle, tabbar, divider, spacer
+
+Default props per type:
+- navbar: { title, action }
+- label: { text, size (number), color (hex), align }
+- subtext: { text, size, color, align }
+- button: { text, color (hex), textColor (hex) }
+- input: { placeholder }
+- card: { title, body }
+- image: { height (number), label, color (hex) }
+- hero: { height, title, subtitle, fromColor (hex), toColor (hex) }
+- listrow: { icon (emoji), label, color (hex) }
+- toggle: { label, on (bool), color (hex) }
+- tabbar: { tabs (array), icons (array), active (number) }
+- divider: {}
+- spacer: {}
+
+Return ONLY a JSON array. No explanation.`;
+
+  const userMsg = `Current canvas: ${canvasJson}\n\nInstruction: ${prompt}`;
+
+  const key = getApiKey();
+  if (!key) {
+    showToast('⚠ Add your API key to use AI features');
+    return;
+  }
+
+  state.aiLoading = true;
+  render();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }],
+      }),
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    const clean = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    if (Array.isArray(parsed)) {
+      state.screens[state.activeScreen].elements = parsed.map(el => ({
+        id: ++state.idCounter,
+        type: el.type,
+        props: el.props,
+      }));
+      state.selectedEl = null;
+      showToast('✓ AI updated your canvas');
+    }
+  } catch(e) {
+    showToast('AI error — check your API key');
+  }
+  state.aiLoading = false;
+  state.aiPrompt = '';
+  render();
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function showToast(msg) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+
+function getScreen() { return state.screens[state.activeScreen]; }
+
+function addElement(type) {
+  const id = ++state.idCounter;
+  const props = JSON.parse(JSON.stringify(DEFAULT_PROPS[type] || {}));
+  getScreen().elements.push({ id, type, props });
+  state.selectedEl = id;
+  render();
+}
+
+function deleteElement(id) {
+  const screen = getScreen();
+  screen.elements = screen.elements.filter(e => e.id !== id);
+  if (state.selectedEl === id) state.selectedEl = null;
+  render();
+}
+
+function loadTemplate(name) {
+  const tpl = TEMPLATES[name];
+  if (!tpl) return;
+  getScreen().elements = tpl.elements.map((el,i) => ({
+    id: ++state.idCounter,
+    type: el.type,
+    props: JSON.parse(JSON.stringify(el.p)),
+  }));
+  state.selectedEl = null;
+  render();
+  showToast(`Loaded "${tpl.label}" template`);
+}
+
+function updateProp(key, value) {
+  const screen = getScreen();
+  const el = screen.elements.find(e => e.id === state.selectedEl);
+  if (!el) return;
+  el.props[key] = value;
+  render();
+}
+
+function addScreen() {
+  const id = state.screens.length + 1;
+  state.screens.push({ id, name: `Screen ${id}`, elements: [] });
+  state.activeScreen = state.screens.length - 1;
+  state.selectedEl = null;
+  render();
+}
+
+// ============================================================
+// DRAG AND DROP
+// ============================================================
+let activeDrag = null;
+
+function onDragStart(e, type) {
+  activeDrag = type;
+  e.dataTransfer.effectAllowed = 'copy';
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('phone-drop').classList.remove('drag-over');
+  if (activeDrag) { addElement(activeDrag); activeDrag = null; }
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  const app = document.getElementById('app');
+  const screen = getScreen();
+  const selEl = screen.elements.find(e => e.id === state.selectedEl);
+
+  // Build properties panel HTML
+  let propHtml = '';
+  if (!selEl) {
+    propHtml = `<div class="no-sel"><div class="no-sel-icon">⊙</div>Select an element on the canvas to edit its properties</div>
+      <div class="panel-section">
+        <div class="panel-section-title">Layers (${screen.elements.length})</div>
+        <div class="layer-list">
+          ${screen.elements.map(el => `
+            <div class="layer-item${el.id===state.selectedEl?' active':''}" onclick="state.selectedEl=${el.id};render()">
+              <span class="layer-icon">${COMPONENTS.find(c=>c.type===el.type)?.icon||'○'}</span>
+              <span class="layer-name">${el.type} ${el.id}</span>
+              <span class="layer-del" onclick="event.stopPropagation();deleteElement(${el.id})">✕</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  } else {
+    const p = selEl.props;
+    const type = selEl.type;
+
+    const textProp = (label, key, val) => `
+      <div class="prop-row">
+        <div class="prop-label">${label}</div>
+        <input type="text" value="${(val||'').toString().replace(/"/g,'&quot;')}" oninput="updateProp('${key}',this.value)">
+      </div>`;
+
+    const rangeProp = (label, key, val, min, max) => `
+      <div class="prop-row">
+        <div class="prop-label">${label}</div>
+        <div class="range-row">
+          <input type="range" min="${min}" max="${max}" value="${val}" oninput="updateProp('${key}',parseInt(this.value));document.getElementById('rv_${key}').textContent=this.value">
+          <span class="range-val" id="rv_${key}">${val}</span>
+        </div>
+      </div>`;
+
+    const colors = ['#007AFF','#34C759','#FF3B30','#FF9500','#AF52DE','#000000','#ffffff','#888888','#FF2D55','#5AC8FA'];
+    const colorProp = (label, key, val) => `
+      <div class="prop-row">
+        <div class="prop-label">${label}</div>
+        <div class="color-swatches">
+          ${colors.map(c=>`<div class="color-swatch${c===val?' sel':''}" style="background:${c};border:1px solid rgba(0,0,0,0.15)" onclick="updateProp('${key}','${c}');document.querySelectorAll('[data-cg=${key}]').forEach(s=>s.classList.remove('sel'));this.classList.add('sel')" data-cg="${key}"></div>`).join('')}
+          <input type="color" value="${val||'#007AFF'}" style="width:20px;height:20px;padding:0;border-radius:5px;overflow:hidden;border:1px solid rgba(255,255,255,0.1)" oninput="updateProp('${key}',this.value)">
+        </div>
+      </div>`;
+
+    const alignProp = (key, val) => `
+      <div class="prop-row">
+        <div class="prop-label">Alignment</div>
+        <div class="toggle-switch">
+          ${['left','center','right'].map(a=>`<div class="toggle-opt${val===a?' active':''}" onclick="updateProp('${key}','${a}');render()">${a}</div>`).join('')}
+        </div>
+      </div>`;
+
+    let fields = '';
+    if (type==='navbar')   fields = textProp('Title','title',p.title) + textProp('Action','action',p.action);
+    if (type==='label')    fields = textProp('Text','text',p.text) + rangeProp('Size','size',p.size||20,10,40) + colorProp('Color','color',p.color) + alignProp('align',p.align||'left');
+    if (type==='subtext')  fields = textProp('Text','text',p.text) + rangeProp('Size','size',p.size||14,10,24) + colorProp('Color','color',p.color) + alignProp('align',p.align||'left');
+    if (type==='button')   fields = textProp('Label','text',p.text) + colorProp('Background','color',p.color) + colorProp('Text color','textColor',p.textColor);
+    if (type==='input')    fields = textProp('Placeholder','placeholder',p.placeholder);
+    if (type==='card')     fields = textProp('Title','title',p.title) + textProp('Body','body',p.body);
+    if (type==='image')    fields = textProp('Label','label',p.label) + rangeProp('Height','height',p.height||100,40,200) + colorProp('Background','color',p.color);
+    if (type==='hero')     fields = textProp('Title','title',p.title) + textProp('Subtitle','subtitle',p.subtitle) + rangeProp('Height','height',p.height||140,80,220) + colorProp('From color','fromColor',p.fromColor) + colorProp('To color','toColor',p.toColor);
+    if (type==='listrow')  fields = textProp('Label','label',p.label) + textProp('Icon (emoji)','icon',p.icon) + colorProp('Icon color','color',p.color);
+    if (type==='toggle')   fields = textProp('Label','label',p.label) + colorProp('On color','color',p.color) + `<div class="prop-row"><div class="prop-label">State</div><div class="toggle-switch"><div class="toggle-opt${p.on?' active':''}" onclick="updateProp('on',true);render()">On</div><div class="toggle-opt${!p.on?' active':''}" onclick="updateProp('on',false);render()">Off</div></div></div>`;
+
+    propHtml = `
+      <div class="prop-section">
+        <div class="prop-title">${type.toUpperCase()}</div>
+        ${fields || '<div style="font-size:11px;color:var(--text3);padding:4px 0">No editable properties</div>'}
+      </div>
+      <div class="prop-section">
+        <div class="prop-title">Actions</div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn" style="flex:1;font-size:11px;padding:5px 8px;" onclick="const s=getScreen();const i=s.elements.findIndex(e=>e.id===${selEl.id});if(i>0){[s.elements[i-1],s.elements[i]]=[s.elements[i],s.elements[i-1]];render()}">↑ Up</button>
+          <button class="btn" style="flex:1;font-size:11px;padding:5px 8px;" onclick="const s=getScreen();const i=s.elements.findIndex(e=>e.id===${selEl.id});if(i<s.elements.length-1){[s.elements[i],s.elements[i+1]]=[s.elements[i+1],s.elements[i]];render()}">↓ Down</button>
+          <button class="btn" style="flex:1;font-size:11px;padding:5px 8px;color:var(--red);border-color:var(--red);" onclick="deleteElement(${selEl.id})">✕ Del</button>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-section-title">All Layers</div>
+        <div class="layer-list">
+          ${screen.elements.map(el => `
+            <div class="layer-item${el.id===state.selectedEl?' active':''}" onclick="state.selectedEl=${el.id};render()">
+              <span class="layer-icon">${COMPONENTS.find(c=>c.type===el.type)?.icon||'○'}</span>
+              <span class="layer-name">${el.type}</span>
+              <span class="layer-del" onclick="event.stopPropagation();deleteElement(${el.id})">✕</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Export modal
+  const exportModal = state.showExport ? `
+    <div class="modal-overlay" onclick="if(event.target===this){state.showExport=false;render()}">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">Export Xcode Project</div>
+          <div class="modal-sub">Download your app as a ready-to-open Xcode project</div>
+        </div>
+        <div class="modal-body">
+          <div class="export-steps">
+            <div class="export-step"><div class="step-num">1</div><div class="step-text"><strong>Download the .zip file</strong>Includes ContentView.swift, App.swift, Info.plist and a README</div></div>
+            <div class="export-step"><div class="step-num">2</div><div class="step-text"><strong>Unzip and open in Xcode</strong>Double-click the .xcodeproj file on your Mac</div></div>
+            <div class="export-step"><div class="step-num">3</div><div class="step-text"><strong>Run on simulator or device</strong>Press Cmd+R — your app is live</div></div>
+          </div>
+          <div class="credit-display">
+            <div><div class="credit-info">Your credits</div><div style="font-size:11px;color:var(--text3);margin-top:2px">1 credit per export</div></div>
+            <div class="credit-count">${state.credits}</div>
+          </div>
+          ${state.credits === 0 ? `
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">Purchase credits to export:</div>
+          <div class="credit-packs">
+            <div class="credit-pack"><div class="pack-credits">3</div><div class="pack-label">credits</div><div class="pack-price">$2.99</div></div>
+            <div class="credit-pack selected"><div class="pack-credits">10</div><div class="pack-label">credits</div><div class="pack-price">$7.99</div></div>
+            <div class="credit-pack"><div class="pack-credits">30</div><div class="pack-label">credits</div><div class="pack-price">$19.99</div></div>
+          </div>` : ''}
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel btn" onclick="state.showExport=false;render()">Cancel</button>
+          ${state.credits > 0
+            ? `<button class="btn-download" onclick="state.credits--;state.showExport=false;generateXcodeExport();render();showToast('✓ Exported! Check your downloads')">Download .zip (1 credit)</button>`
+            : `<button class="btn-buy">Buy Credits via Stripe ↗</button>`
+          }
+        </div>
+      </div>
+    </div>` : '';
+
+  app.innerHTML = `
+    ${!getApiKey() ? `
+    <div class="env-banner">
+      <div class="env-dot"></div>
+      <span style="flex-shrink:0">AI needs your Anthropic API key:</span>
+      <input id="key-input" type="password" placeholder="sk-ant-api03-..." value=""
+        style="flex:1;max-width:320px;padding:3px 8px;font-size:11px;background:rgba(0,0,0,0.3);border:1px solid rgba(91,142,240,0.4);border-radius:4px;color:#e8eaf0;font-family:monospace"
+        onkeydown="if(event.key==='Enter'){setApiKey(this.value);render()}" />
+      <button onclick="setApiKey(document.getElementById('key-input').value);render()"
+        style="padding:3px 10px;background:var(--accent);color:white;border-radius:4px;font-size:11px;flex-shrink:0">Save</button>
+      <a href="https://console.anthropic.com" target="_blank" style="font-size:11px;color:var(--accent);flex-shrink:0">Get key ↗</a>
+    </div>` : `
+    <div class="env-banner" style="background:rgba(62,207,142,0.08);border-bottom-color:rgba(62,207,142,0.2)">
+      <div class="env-dot" style="background:var(--green)"></div>
+      <span style="color:var(--green)">AI ready</span>
+      <span style="color:var(--text3);font-size:11px">Key saved in browser · <button onclick="localStorage.removeItem('sc_api_key');render()" style="color:var(--text3);font-size:11px;text-decoration:underline">remove</button></span>
+    </div>`}
+
+    <div class="topbar">
+      <div class="logo">Swift<span>Canvas</span></div>
+      <div class="screen-tabs">
+        ${state.screens.map((s,i) => `<button class="screen-tab${i===state.activeScreen?' active':''}" onclick="state.activeScreen=${i};state.selectedEl=null;render()">${s.name}</button>`).join('')}
+        ${state.screens.length < 5 ? `<button class="screen-tab add" onclick="addScreen()">+</button>` : ''}
+      </div>
+      <div class="topbar-right">
+        <div class="credits-badge"><div class="dot"></div>${state.credits} credit${state.credits!==1?'s':''}</div>
+        <button class="btn btn-code" onclick="state.codeOpen=!state.codeOpen;render()">${state.codeOpen?'Hide':'{ }'} Swift</button>
+        <button class="btn btn-export" onclick="state.showExport=true;render()">Export Xcode ↗</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="left-panel">
+        <div class="panel-section">
+          <div class="panel-section-title">Templates</div>
+          <div class="template-grid">
+            ${Object.entries(TEMPLATES).map(([k,t])=>`
+              <div class="template-card" onclick="loadTemplate('${k}')">
+                <span class="template-icon">${t.icon}</span>${t.label}
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="panel-section">
+          <div class="panel-section-title">Components</div>
+          <div class="comp-list">
+            ${COMPONENTS.map(c=>`
+              <div class="comp-item" draggable="true" ondragstart="onDragStart(event,'${c.type}')">
+                <div class="comp-icon">${c.icon}</div>${c.label}
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="ai-section">
+          <div class="panel-section-title" style="margin-bottom:7px">AI Prompt</div>
+          <div class="ai-input-wrap">
+            <textarea class="ai-input" placeholder="e.g. Add a dark hero banner at the top..." id="ai-textarea" oninput="state.aiPrompt=this.value" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();if(state.aiPrompt.trim())callAI(state.aiPrompt)}">${state.aiPrompt}</textarea>
+            <button class="ai-send-btn" onclick="if(state.aiPrompt.trim())callAI(state.aiPrompt)">↑</button>
+          </div>
+          ${state.aiLoading ? `<div class="ai-loading"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div><span>AI is building...</span></div>` : ''}
+        </div>
+      </div>
+
+      <div class="canvas-area" onclick="if(event.target===this||event.currentTarget===this){state.selectedEl=null;render()}">
+        <div class="canvas-bg"></div>
+        <div class="phone-container">
+          <div class="phone-label">iPhone 15 Pro · iOS 17</div>
+          <div class="phone-outer">
+            <div class="phone-side-btn phone-vol1"></div>
+            <div class="phone-side-btn phone-vol2"></div>
+            <div class="phone-side-btn phone-power"></div>
+            <div class="phone-inner">
+              <div class="phone-notch"><div class="notch-speaker"></div><div class="notch-cam"></div></div>
+              <div class="phone-status">
+                <span>9:41</span>
+                <span style="display:flex;align-items:center;gap:3px;font-size:9px">▲▲▲ ◉ ▐▌</span>
+              </div>
+              <div class="phone-screen">
+                <div class="phone-drop-zone" id="phone-drop"
+                  ondragover="event.preventDefault();document.getElementById('phone-drop').classList.add('drag-over')"
+                  ondragleave="document.getElementById('phone-drop').classList.remove('drag-over')"
+                  ondrop="onDrop(event)">
+                  ${screen.elements.length === 0 ? `
+                    <div class="drop-hint">
+                      <div class="drop-hint-icon">⊕</div>
+                      <div class="drop-hint-text">Drag components here<br>or load a template</div>
+                    </div>` : ''}
+                  ${screen.elements.map(el => `
+                    <div class="phone-el${el.id===state.selectedEl?' selected':''}" onclick="event.stopPropagation();state.selectedEl=${el.id};render()">
+                      <button class="el-delete" onclick="event.stopPropagation();deleteElement(${el.id})">✕</button>
+                      <div class="el-move">⠿</div>
+                      ${renderPhoneEl(el)}
+                    </div>`).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-panel">${propHtml}</div>
+    </div>
+
+    <div class="code-drawer${state.codeOpen?' open':''}">
+      <div class="code-inner">
+        <div class="code-header">
+          <span class="code-title">ContentView.swift — live preview</span>
+          <button class="code-copy" onclick="navigator.clipboard.writeText(document.getElementById('raw-swift').textContent);showToast('✓ Copied to clipboard')">Copy</button>
+        </div>
+        <pre id="raw-swift">${generateSwift(screen)}</pre>
+      </div>
+    </div>
+
+    ${exportModal}
+  `;
+}
+
+// ============================================================
+// LOAD JSZIP
+// ============================================================
+const jszipScript = document.createElement('script');
+jszipScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+document.head.appendChild(jszipScript);
+
+// ============================================================
+// INIT — wrapped in try/catch so errors show instead of blank
+// ============================================================
+function safeRender() {
+  try {
+    render();
+  } catch(e) {
+    document.getElementById('app').innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:16px;font-family:monospace;color:#e8eaf0;background:#0d0f14;padding:24px;text-align:center;">
+        <div style="font-size:32px">⚠</div>
+        <div style="font-size:16px;font-weight:600;">SwiftCanvas failed to load</div>
+        <div style="font-size:12px;color:#8b90a0;max-width:400px;line-height:1.6;">${e.message}</div>
+        <button onclick="location.reload()" style="margin-top:8px;padding:8px 20px;background:#5b8ef0;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Reload</button>
+      </div>`;
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', safeRender);
+} else {
+  safeRender();
+}
+</script>
+</body>
+</html>
