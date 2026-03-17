@@ -253,8 +253,9 @@ let state = {
   idCounter: 100,
 };
 
-/* __INJECT_API_KEY__ */
-const ANTHROPIC_API_KEY = window.ANTHROPIC_API_KEY || '';
+// API key lives in localStorage — entered once via the settings panel
+function getApiKey() { return localStorage.getItem('sc_api_key') || ''; }
+function setApiKey(k) { localStorage.setItem('sc_api_key', k.trim()); }
 
 // ============================================================
 // COMPONENT DEFINITIONS
@@ -697,7 +698,7 @@ Return ONLY a JSON array. No explanation.`;
 
   const userMsg = `Current canvas: ${canvasJson}\n\nInstruction: ${prompt}`;
 
-  const key = ANTHROPIC_API_KEY || window.__ANTHROPIC_KEY;
+  const key = getApiKey();
   if (!key) {
     showToast('⚠ Add your API key to use AI features');
     return;
@@ -953,14 +954,22 @@ function render() {
     </div>` : '';
 
   app.innerHTML = `
-    ${state.showEnvBanner ? `
+    ${!getApiKey() ? `
     <div class="env-banner">
       <div class="env-dot"></div>
-      <span>AI features need your Anthropic API key stored as </span>
-      <span class="env-key">ANTHROPIC_API_KEY</span>
-      <span> in Netlify environment variables</span>
-      <button onclick="state.showEnvBanner=false;render()" style="margin-left:auto;font-size:11px;color:var(--text3)">✕</button>
-    </div>` : ''}
+      <span style="flex-shrink:0">AI needs your Anthropic API key:</span>
+      <input id="key-input" type="password" placeholder="sk-ant-api03-..." value=""
+        style="flex:1;max-width:320px;padding:3px 8px;font-size:11px;background:rgba(0,0,0,0.3);border:1px solid rgba(91,142,240,0.4);border-radius:4px;color:#e8eaf0;font-family:monospace"
+        onkeydown="if(event.key==='Enter'){setApiKey(this.value);render()}" />
+      <button onclick="setApiKey(document.getElementById('key-input').value);render()"
+        style="padding:3px 10px;background:var(--accent);color:white;border-radius:4px;font-size:11px;flex-shrink:0">Save</button>
+      <a href="https://console.anthropic.com" target="_blank" style="font-size:11px;color:var(--accent);flex-shrink:0">Get key ↗</a>
+    </div>` : `
+    <div class="env-banner" style="background:rgba(62,207,142,0.08);border-bottom-color:rgba(62,207,142,0.2)">
+      <div class="env-dot" style="background:var(--green)"></div>
+      <span style="color:var(--green)">AI ready</span>
+      <span style="color:var(--text3);font-size:11px">Key saved in browser · <button onclick="localStorage.removeItem('sc_api_key');render()" style="color:var(--text3);font-size:11px;text-decoration:underline">remove</button></span>
+    </div>`}
 
     <div class="topbar">
       <div class="logo">Swift<span>Canvas</span></div>
