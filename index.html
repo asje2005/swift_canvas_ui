@@ -114,6 +114,7 @@
   .el-delete { position: absolute; top: -7px; right: -7px; width: 16px; height: 16px; background: var(--red); border-radius: 50%; color: white; font-size: 10px; display: none; align-items: center; justify-content: center; z-index: 10; line-height: 1; }
   .phone-el.selected .el-delete { display: flex; }
   .el-move { position: absolute; top: -7px; left: -7px; width: 16px; height: 16px; background: var(--bg4); border-radius: 50%; color: var(--text2); font-size: 9px; display: none; align-items: center; justify-content: center; z-index: 10; cursor: grab; }
+  .phone-el.drop-target { outline: 2px dashed var(--amber) !important; background: rgba(240,160,66,0.06); }
   .phone-el.selected .el-move { display: flex; }
 
   /* PHONE UI COMPONENTS */
@@ -787,12 +788,23 @@ function loadTemplate(name) {
   showToast(`Loaded "${tpl.label}" template`);
 }
 
-function updateProp(key, value) {
+function updateProp(key, value, skipRender) {
   const screen = getScreen();
   const el = screen.elements.find(e => e.id === state.selectedEl);
   if (!el) return;
   el.props[key] = value;
-  render();
+  if (skipRender) {
+    // Just update the phone canvas element in place without rebuilding the whole DOM
+    const phoneEl = document.querySelector(`.phone-el[data-id="${el.id}"] .el-inner`);
+    if (phoneEl) phoneEl.innerHTML = renderPhoneEl(el);
+    // Update code panel if open
+    if (state.codeOpen) {
+      const pre = document.getElementById('raw-swift');
+      if (pre) pre.innerHTML = generateSwift(getScreen());
+    }
+  } else {
+    render();
+  }
 }
 
 function addScreen() {
@@ -817,6 +829,46 @@ function onDrop(e) {
   e.preventDefault();
   document.getElementById('phone-drop').classList.remove('drag-over');
   if (activeDrag) { addElement(activeDrag); activeDrag = null; }
+  dragOverId = null;
+}
+
+// Reorder elements within the canvas by dragging
+let dragElId = null;
+let dragOverId = null;
+
+function onDragStartEl(e, id) {
+  dragElId = id;
+  dragOverId = null;
+  e.dataTransfer.effectAllowed = 'move';
+  e.stopPropagation();
+  // Don't steal from component panel drag
+  activeDrag = null;
+}
+
+function onDragOverEl(e, id) {
+  e.preventDefault();
+  if (dragElId === null || dragElId === id) return;
+  dragOverId = id;
+  // Visual indicator: highlight drop target
+  document.querySelectorAll('.phone-el').forEach(el => el.classList.remove('drop-target'));
+  const target = document.querySelector(`.phone-el[data-id="${id}"]`);
+  if (target) target.classList.add('drop-target');
+}
+
+function onDropEl(e, targetId) {
+  e.preventDefault();
+  document.querySelectorAll('.phone-el').forEach(el => el.classList.remove('drop-target'));
+  if (dragElId === null || dragElId === targetId) { dragElId = null; return; }
+  const screen = getScreen();
+  const fromIdx = screen.elements.findIndex(el => el.id === dragElId);
+  const toIdx   = screen.elements.findIndex(el => el.id === targetId);
+  if (fromIdx === -1 || toIdx === -1) { dragElId = null; return; }
+  // Reorder
+  const [moved] = screen.elements.splice(fromIdx, 1);
+  screen.elements.splice(toIdx, 0, moved);
+  dragElId = null;
+  dragOverId = null;
+  render();
 }
 
 // ============================================================
@@ -849,7 +901,7 @@ function render() {
     const textProp = (label, key, val) => `
       <div class="prop-row">
         <div class="prop-label">${label}</div>
-        <input type="text" value="${(val||'').toString().replace(/"/g,'&quot;')}" oninput="updateProp('${key}',this.value)">
+        <input type="text" value="${(val||'').toString().replace(/"/g,'&quot;')}" oninput="updateProp('${key}',this.value,true)" onblur="render()">
       </div>`;
 
     const rangeProp = (label, key, val, min, max) => `
@@ -1039,10 +1091,10 @@ function render() {
                       <div class="drop-hint-text">Drag components here<br>or load a template</div>
                     </div>` : ''}
                   ${screen.elements.map(el => `
-                    <div class="phone-el${el.id===state.selectedEl?' selected':''}" onclick="event.stopPropagation();state.selectedEl=${el.id};render()">
+                    <div class="phone-el${el.id===state.selectedEl?' selected':''}" data-id="${el.id}" onclick="event.stopPropagation();state.selectedEl=${el.id};render()" draggable="true" ondragstart="onDragStartEl(event,${el.id})" ondragover="event.preventDefault();event.stopPropagation();onDragOverEl(event,${el.id})" ondrop="event.stopPropagation();onDropEl(event,${el.id})">
                       <button class="el-delete" onclick="event.stopPropagation();deleteElement(${el.id})">✕</button>
                       <div class="el-move">⠿</div>
-                      ${renderPhoneEl(el)}
+                      <div class="el-inner">${renderPhoneEl(el)}</div>
                     </div>`).join('')}
                 </div>
               </div>
